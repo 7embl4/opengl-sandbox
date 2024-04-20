@@ -7,6 +7,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <renderer.h>
 #include <vertex_buffer.h>
@@ -32,7 +33,7 @@ int main()
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     
     /* Create a window */
-    GLFWwindow* window = glfwCreateWindow(640, 480, "Hello World", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(960, 540, "Hello World", nullptr, nullptr);
 
     /* Check if window have not created */
     if (!window) {
@@ -52,20 +53,20 @@ int main()
         return -1;
 
     /* OpenGL options */
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_DEPTH_TEST);
 
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glFrontFace(GL_CCW);
+    //glEnable(GL_CULL_FACE);
+    //glCullFace(GL_BACK);
+    //glFrontFace(GL_CCW);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     float positions[] = {
-        -0.5f, -0.5f, 0.0f, 0.0f,   // 0
-         0.5f, -0.5f, 1.0f, 0.0f,   // 1
-         0.5f,  0.5f, 1.0f, 1.0f,   // 2
-        -0.5f,  0.5f, 0.0f, 1.0f    // 3
+        0.0f  , 0.0f  , 0.0f, 0.0f,   // 0
+        200.0f, 0.0f  , 1.0f, 0.0f,   // 1
+        200.0f, 200.0f, 1.0f, 1.0f,   // 2
+        0.0f  , 200.0f, 0.0f, 1.0f    // 3
     };
 
     // index buffer
@@ -80,7 +81,7 @@ int main()
     /* Vertex buffer object */
     vertex_buffer vbo(positions, 4 * 4 * sizeof(float));
     
-    /* Layout */
+    /* Adding atributes to the buffer */
     vertex_buffer_layout layout;
     layout.push<float>(2);
     layout.push<float>(2);
@@ -89,17 +90,19 @@ int main()
     /* Index buffer object */
     index_buffer ibo(indices, 6);
 
+    /* Model view projection */
+    glm::mat4 proj = glm::ortho(0.0f, 960.0f, 0.0f, 540.0f);
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
+
+    glm::vec3 translationA(100, 0, 0);
+    glm::vec3 translationB(400, 0, 0);
+
     /* Load shader */
     shader basic_shader("C:\\dev\\opengl-sandbox\\res\\shaders\\basic.glsl");
-    basic_shader.bind();    // can't read a shader somehow
-    basic_shader.set_uniform4f("u_Color", 0.0f, 0.5f, 0.7f, 1.0f);
-
-    /* Values for changing uniforms */
-    float r = 0.0f;
-    float increment = 0.05f;
+    basic_shader.bind();
 
     /* Textures */
-    texture tex("C:\\dev\\opengl-sandbox\\res\\textures\\cat.png");
+    texture tex("C:\\dev\\opengl-sandbox\\res\\textures\\cubes.png");
     tex.bind();
     basic_shader.set_uniform1i("u_Texture", 0);
 
@@ -113,22 +116,23 @@ int main()
     /* Main loop */
     while (!glfwWindowShouldClose(window))
     {
-        /* Update input data */
-        if (r > 1.0f) {
-            increment = -0.05f;
-        }
-        else if (r < 0.0f) {
-            increment = 0.05f;
-        }
-        r += increment;
-
         /* Clear frame */
         render.clear();
 
         /* Draw */
         basic_shader.bind();
-        basic_shader.set_uniform4f("u_Color", r, 0.5f, 0.7f, 1.0f);
+        glm::mat4 common_mvp = proj * view;
 
+        /* First model */
+        glm::mat4 modelA = glm::translate(glm::mat4(1.0f), translationA);
+        glm::mat4 mvpA = common_mvp * modelA;
+        basic_shader.set_uniformMat4f("u_MVP", mvpA);
+        render.draw(vao, ibo, basic_shader);
+
+        /* Second model */
+        glm::mat4 modelB = glm::translate(glm::mat4(1.0f), translationB);
+        glm::mat4 mvpB = common_mvp * modelB;
+        basic_shader.set_uniformMat4f("u_MVP", mvpB);
         render.draw(vao, ibo, basic_shader);
 
         /* Swap front and back buffers */

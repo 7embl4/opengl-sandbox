@@ -11,6 +11,7 @@
 #include <debuger.h>
 
 #include <GL/glew.h>
+#include <glm/glm.hpp>
 
 struct shader_program_source {
 	std::string VertexSource;
@@ -34,6 +35,7 @@ public:
 	}
 
 	void bind() const {
+		// Optimization: If shader is already bound, don't rebind it one more time
 		GLCall(glUseProgram(m_rendererID));
 	}
 
@@ -48,6 +50,10 @@ public:
 
 	void set_uniform4f(const std::string& name, float v0, float v1, float v2, float v3) {
 		GLCall(glUniform4f(this->get_uniform_location(name), v0, v1, v2, v3));
+	}
+
+	void set_uniformMat4f(const std::string& name, const glm::mat4& matrix) {
+		GLCall(glUniformMatrix4fv(this->get_uniform_location(name), 1, GL_FALSE, &matrix[0][0]));
 	}
 
 private:
